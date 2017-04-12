@@ -21,18 +21,6 @@ object StackOverflow extends StackOverflow{
   @transient lazy val sc = new SparkContext(conf)
   
   //Download from http://alaska.epfl.ch/~dockermoocs/bigdata/stackoverflow.csv
-  //data format:
-  //<postTypeId>,<id>,[<acceptedAnswer>],[<parentId>],<score>,[<tag>]
-  //1,27233496,,,0,C#
-  //1,23698767,,,9,C#
-  //1,5484340,,,0,C#
-  //2,5494879,,5484340,1,
-  //1,9419744,,,2,Objective-C
-  //1,26875732,,,1,C#
-  //1,9002525,,,2,C++
-  //2,9003401,,9002525,4,
-  //2,9003942,,9002525,1,
-  //2,9005311,,9002525,0,
   val file = "E:/Datasets/coursera-spark-epfl/stackoverflow.csv"
   
   def main(args: Array[String]): Unit = {
