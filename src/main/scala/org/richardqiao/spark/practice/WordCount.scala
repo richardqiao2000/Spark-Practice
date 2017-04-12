@@ -17,5 +17,6 @@ object WordCount {
                 .map((_, 1)).reduceByKey(_+_)
     val sort = rdd.takeOrdered(20)(Ordering[Int].reverse.on(_._2))
     sort.foreach(println)
+    //sc.parallelize(List(str)).flatMap(_.split(" ")).collect().foreach(println)
   }
 }
