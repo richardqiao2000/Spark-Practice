@@ -16,22 +16,22 @@ case class Posting(
 ) extends Serializable
 
 
-object StackOverflow extends StackOverflow{
+object StackOverflow{
   @transient lazy val conf = new SparkConf().setMaster("local[*]").setAppName("KMean")
   @transient lazy val sc = new SparkContext(conf)
   
   //Download from http://alaska.epfl.ch/~dockermoocs/bigdata/stackoverflow.csv
-  val file = "D:/datasets/coursera-spark-epfl/stackoverflow.csv"
+  val file = "e:/datasets/coursera-spark-epfl/stackoverflow.csv"
   val langs =
     List(
       "JavaScript", "Java", "PHP", "Python", "C#", "C++", "Ruby", "CSS",
       "Objective-C", "Perl", "Scala", "Haskell", "MATLAB", "Clojure", "Groovy")
-  val langSpread = 50000
-  assert(langSpread > 0, "If langSpread is zero we can't recover the language from the input data")
+  val langSpread: Int = 50000
+  val kmeansKernels = langs.length * 3
+  val kmeansETA = 20.0D
+  val kmeansMaxIterations = 120
   
-  def kmeansKernels = 45
-  def kmeansETA = 20.0D
-  def kmeansMaxIterations = 120
+  assert(langSpread > 0, "If langSpread is zero we can't recover the language from the input data")
   
   def main(args: Array[String]): Unit = {
     val lines = sc.textFile(file)
@@ -67,65 +67,45 @@ object StackOverflow extends StackOverflow{
     
     //4. Build vector[Int, Int] to demonstrate language' score
     //   Each language is represented as an integer number
-    val vector = scores.map(s => ((langs.indexOf(s._1.tags.get) + 1) * langSpread, s._2))
-    assert(vector.count == 2121822, "Incorrect number of vector: " + vector.count)
+    val vectors = scores.map(s => ((if(s._1.tags == None) 0 else langs.indexOf(s._1.tags.get)) * langSpread, s._2))
+    assert(vectors.count == 2121822, "Incorrect number of vector: " + vectors.count)
     
-    val means = kmeans(sampleVectors(vector), vector, debug = true)
-    val results = clusterResults(means, vector)
+    //5. Build initial sample cluster points by using reservoir sampling
+    //val samples = sampleVectors(vectors)
+    val samples = vectors.groupByKey.flatMap({case (lang, list) => 
+                                           sampling(list.toIterator, 3).map((lang, _))
+                                         }).collect
+    
+                                         
+    //6. Iterate do KMeans algorithm
+    val means = kmeans(samples, vectors, debug = true)
+    
+    //7. Collect Cluster results
+    val results = clusterResults(means, vectors)
     printResults(results)
-
-    //vector.take(10).foreach(println)
+    
+    //samples.foreach(println)
   }
   
-  
-  /** Sample the vectors */
-  def sampleVectors(vectors: RDD[(Int, Int)]): Array[(Int, Int)] = {
 
-    assert(kmeansKernels % langs.length == 0, "kmeansKernels should be a multiple of the number of languages studied.")
-    val perLang = kmeansKernels / langs.length
-
-    // http://en.wikipedia.org/wiki/Reservoir_sampling
-    def reservoirSampling(lang: Int, iter: Iterator[Int], size: Int): Array[Int] = {
-      val res = new Array[Int](size)
-      val rnd = new scala.util.Random(lang)
-
-      for (i <- 0 until size) {
-        assert(iter.hasNext, s"iterator must have at least $size elements")
-        res(i) = iter.next
-      }
-
-      var i = size.toLong
-      while (iter.hasNext) {
-        val elt = iter.next
-        val j = math.abs(rnd.nextLong) % i
-        if (j < size)
-          res(j.toInt) = elt
-        i += 1
-      }
-
-      res
+  def sampling(list: Iterator[Int], size: Int): Array[Int] = {
+    val res = new Array[Int](size)
+    for(i <- 0 until size){
+      assert(list.hasNext, "No enough data")
+      res(i) = list.next
     }
-
-    val res =
-      if (langSpread < 500)
-        // sample the space regardless of the language
-        vectors.takeSample(false, kmeansKernels, 42)
-      else
-        // sample the space uniformly from each language partition
-        vectors.groupByKey.flatMap({
-          case (lang, vectors) => reservoirSampling(lang, vectors.toIterator, perLang).map((lang, _))
-        }).collect()
-
-    assert(res.length == kmeansKernels, res.length)
+    
+    var sz = size
+    val rnd = new scala.util.Random(langSpread)
+    while(list.hasNext){
+      val i = math.abs(rnd.nextInt) % sz
+      val nxt = list.next
+      if(i < size) res(i) = nxt
+      sz += 1
+    }
     res
   }
-
-
-  //
-  //
-  //  Kmeans method:
-  //
-  //
+  
 
   /** Main kmeans computation */
   @tailrec final def kmeans(means: Array[(Int, Int)], vectors: RDD[(Int, Int)], iter: Int = 1, debug: Boolean = false): Array[(Int, Int)] = {
@@ -164,14 +144,6 @@ object StackOverflow extends StackOverflow{
     }
   }
 
-
-
-
-  //
-  //
-  //  Kmeans utilities:
-  //
-  //
 
   /** Decide whether the kmeans clustering converged */
   def converged(distance: Double) =
@@ -230,11 +202,6 @@ object StackOverflow extends StackOverflow{
 
 
 
-  //
-  //
-  //  Displaying results:
-  //
-  //
   def clusterResults(means: Array[(Int, Int)], vectors: RDD[(Int, Int)]): Array[(String, Double, Int, Int)] = {
     val closest = vectors.map(p => (findClosest(p, means), p))
     val closestGrouped = closest.groupByKey
@@ -281,10 +248,4 @@ object StackOverflow extends StackOverflow{
       println(f"${score}%7d  ${lang}%-17s (${percent}%-5.1f%%)      ${size}%7d")
   }
 
-}
-
-class StackOverflow extends Serializable{
-  
-  
-  
 }
