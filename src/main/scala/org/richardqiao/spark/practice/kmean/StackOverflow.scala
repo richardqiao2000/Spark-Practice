@@ -79,15 +79,42 @@ object StackOverflow{
     
                                          
     //6. Iterate do KMeans algorithm
-    val means = kmeans2(samples, vectors, 0)
+    val means = kmeans(samples, vectors, 0)
     
-    //7. Collect Cluster results
-    val results = clusterResults(means, vectors)
+    //7. Get Median Cluster results Array[(language, medianScore, language_percent, size)]
+    val closest = vectors.map(v => (getClosestKernel(v, means), v)).groupByKey
+    val medians = closest.map(_._2).map{list =>
+        val lang = list.groupBy(_._1).maxBy(_._2.size)
+        val language = langs(lang._1 / langSpread)
+        val size = list.size
+        val perc = lang._2.size.toDouble * 100 / size.toDouble
+        val sorted = list.map(_._2).toVector.sorted
+        val len = sorted.size
+        val score = {
+          if(len % 2 == 1) sorted(len / 2)
+          else{
+            val i = len / 2 - 1
+            val j = len / 2
+            (sorted(i) + sorted(j)) / 2
+          }
+        }
+        (language, perc, size, score)
+    }
+    val results = medians.collect.sortBy(_._4)
+
+    //8. Print results
     printResults(results)
     
-    //means.foreach(println)
   }
-  
+
+  def printResults(results: Array[(String, Double, Int, Int)]): Unit = {
+    println("Resulting clusters:")
+    println("  Score  Dominant language (%percent)  Questions")
+    println("================================================")
+    for ((lang, percent, size, score) <- results)
+      println(f"${score}%7d  ${lang}%-17s (${percent}%-5.1f%%)      ${size}%7d")
+  }
+
   def distance(p1: (Int, Int), p2: (Int, Int)): Long = {
     val xx = (p1._1 - p2._1).toLong * (p1._1 - p2._1).toLong
     val yy = (p1._2 - p2._2).toLong * (p1._2 - p2._2).toLong
@@ -118,7 +145,7 @@ object StackOverflow{
     ((x / len).toInt, (y / len).toInt)
   }
   
-  def kmeans2(lastMean: Array[(Int, Int)], vectors: RDD[(Int, Int)], iter: Int = 1): Array[(Int, Int)] = {
+  def kmeans(lastMean: Array[(Int, Int)], vectors: RDD[(Int, Int)], iter: Int = 1): Array[(Int, Int)] = {
     val next = lastMean.clone
     //1. Get next mean
     val newMeans = vectors.map(v => (getClosestKernel(v, next), v))
@@ -141,7 +168,7 @@ object StackOverflow{
     if(dist < kmeansConvergence || iter > kmeansMaxIterations){
       next
     }else{
-      kmeans2(next, vectors, iter + 1)
+      kmeans(next, vectors, iter + 1)
     }
   }
 
@@ -162,35 +189,5 @@ object StackOverflow{
     }
     res
   }
-  def clusterResults(means: Array[(Int, Int)], vectors: RDD[(Int, Int)]): Array[(String, Double, Int, Int)] = {
-    val closestGrouped = vectors.map(p => (getClosestKernel(p, means), p)).groupByKey
-
-    val median = closestGrouped.mapValues { vs =>
-      val m = vs.groupBy(_._1).maxBy(qa => qa._2.size)
-      val langLabel: String   = langs(m._1 / langSpread) // most common language in the cluster
-      val langPercent: Double =  m._2.size.toDouble * 100 / vs.size // percent of the questions in the most common language
-      val clusterSize: Int    = vs.size
-      val sorted = vs.map(_._2).toVector.sorted
-      val medianScore: Int    = {
-        if(sorted.size % 2 == 1){
-          sorted(sorted.size / 2)
-        }else{
-          (sorted(sorted.size / 2) + sorted(sorted.size / 2 - 1)) / 2
-        }
-      }
-
-      (langLabel, langPercent, clusterSize, medianScore)
-    }
-
-    median.collect().map(_._2).sortBy(_._4)
-  }
-
-  def printResults(results: Array[(String, Double, Int, Int)]): Unit = {
-    println("Resulting clusters:")
-    println("  Score  Dominant language (%percent)  Questions")
-    println("================================================")
-    for ((lang, percent, size, score) <- results)
-      println(f"${score}%7d  ${lang}%-17s (${percent}%-5.1f%%)      ${size}%7d")
-  }
-
+  
 }
