@@ -3,9 +3,9 @@ This is my practice of Spark to manipulate data files with differnt spark APIs
 
 ## Practice List
 * K-Means algorithm (with reservoir sampling) -- org.richardqiao.spark.practice.kmean
-* Dataframe & dataset -- org.richardqiao.spark.practice.TimeUsage
+* Dataframe & dataset -- org.richardqiao.spark.practice.TimeUsage (dataset: http://alaska.epfl.ch/~dockermoocs/bigdata/atussum.csv)
 * WordCount Top 20 -- org.richardqiao.spark.practice.WordCount
-* Secondary Sort -- org.richardqiao.spark.practice.SecondarySort
+* Secondary Sort -- org.richardqiao.spark.practice.SecondarySort (dataset: datasets/9112770_T_ONTIME.zip)
 
 ## Configurations
 set HADOOP_HOME=D:\develop\packages\hadoop-common-2.2.0-bin-32bit-master\hadoop-common-2.2.0-bin-32bit
@@ -13,6 +13,7 @@ set _JAVA_OPTIONS=-Xmx4g
 
 ## Datasets
 http://alaska.epfl.ch/~dockermoocs/bigdata/atussum.csv
+datasets/9112770_T_ONTIME.zip
 
 ## Spark Issues:
 * Encoders.bean can't consume Boolean type. Solution: Change all Boolean to boolean in your bean class.
