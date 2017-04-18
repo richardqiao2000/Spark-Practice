@@ -6,6 +6,7 @@ This is my practice of Spark to manipulate data files with differnt spark APIs
 * Dataframe & dataset -- org.richardqiao.spark.practice.TimeUsage (dataset: http://alaska.epfl.ch/~dockermoocs/bigdata/atussum.csv)
 * WordCount Top 20 -- org.richardqiao.spark.practice.WordCount
 * Secondary Sort -- org.richardqiao.spark.practice.SecondarySort (dataset: datasets/9112770_T_ONTIME.zip)
+* StatCounter Analysis -- org.richardqiao.spark.practice.StatCounterAnalysis (dataset: refered in the class file)
 
 ## Configurations
 set HADOOP_HOME=D:\develop\packages\hadoop-common-2.2.0-bin-32bit-master\hadoop-common-2.2.0-bin-32bit
