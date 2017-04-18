@@ -18,3 +18,4 @@ datasets/9112770_T_ONTIME.zip
 ## Spark Issues:
 * Encoders.bean can't consume Boolean type. Solution: Change all Boolean to boolean in your bean class.
 * Encoders.bean can't consume @Transient fields. Solution: Write code to remove Transient fields from java bean code file.
+
