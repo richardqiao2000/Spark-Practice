@@ -26,7 +26,7 @@ object StackOverflow{
     List(
       "JavaScript", "Java", "PHP", "Python", "C#", "C++", "Ruby", "CSS",
       "Objective-C", "Perl", "Scala", "Haskell", "MATLAB", "Clojure", "Groovy")
-  val langSpread: Int = 10000
+  val langSpread: Int = 50000
   val kmeansKernels = langs.length * 3
   val kmeansETA = 20.0D
   val kmeansMaxIterations = 120
